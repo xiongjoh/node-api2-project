@@ -25,7 +25,27 @@ server.post('/api/posts', async (req, res) => {
     
 })
 server.post('/api/posts/:id/comments', (req, res) => {
+    const { id } = req.params
+    const { text } = req.body
+    
+    db.findById(id).then(res => {
+        (res === []) && res.status(404).json({message: "The post with the specified ID does not exist."})
+    })
+    .catch(err => res.status(500).json({message:"Error accessing DB"}))
 
+    if (!text) {
+        res.status(400).json({errorMessage:"Please provide text for the comment."})
+        return
+    }
+
+    db.insertComment(req.body)
+    .then(res => {
+        console.log(res)
+        res.status(200).json({...res, ...req.body})
+    })
+    .catch(err => {
+        res.status(500).json({error: "There was an error while saving the comment to the database"})
+    })
 })
 server.get('/api/posts', (req, res) => {
 
