@@ -16,7 +16,8 @@ server.post('/api/posts', async (req, res) => {
         return
     }
     try {
-        const newPost = await db.insert(clientPost)
+        const newPostId = await db.insert(clientPost)
+        const newPost = await db.findById(newPostId.id)
         res.status(201).json(newPost)
     }
     catch(error) {
@@ -24,34 +25,64 @@ server.post('/api/posts', async (req, res) => {
     }
     
 })
-server.post('/api/posts/:id/comments', (req, res) => {
+server.post('/api/posts/:id/comments', async (req, res) => {
     const { id } = req.params
     const { text } = req.body
-    
-    db.findById(id).then(res => {
-        (res === []) && res.status(404).json({message: "The post with the specified ID does not exist."})
-    })
-    .catch(err => res.status(500).json({message:"Error accessing DB"}))
 
     if (!text) {
         res.status(400).json({errorMessage:"Please provide text for the comment."})
         return
     }
 
-    db.insertComment(req.body)
-    .then(res => {
-        console.log(res)
-        res.status(200).json({...res, ...req.body})
-    })
-    .catch(err => {
+    // needs fixing, not displaying comment by Id
+    try {
+        const test = await db.findCommentById(5)
+        console.log(test)
+        const myPost = await db.findById(id)
+        if (myPost.length === 0) {
+            res.status(404).json({message: "The post with the specified ID does not exist."})
+            return
+        } 
+        const addComment = await db.insertComment(req.body)
+        if (addComment) {
+            console.log(addComment.id)
+            const myComment = db.findCommentById(addComment.id)
+            console.log(myComment)
+            res.status(201).json(myComment)
+        }
+    }
+    catch {
         res.status(500).json({error: "There was an error while saving the comment to the database"})
-    })
-})
-server.get('/api/posts', (req, res) => {
+    }
 
 })
-server.get('/api/posts/:id', (req, res) => {
+server.get('/api/posts', async (req, res) => {
 
+    try {
+        const dbPosts = await db.find()
+        res.json(dbPosts)
+    }
+    catch(error) {
+        res.status(500).json({error:"The posts information could not be retrieved"})
+    }
+})
+server.get('/api/posts/:id', async (req, res) => {
+    const { id } = req.params
+
+    try {
+        const post = await db.findById(id)
+        
+        if (post.length === 0) {
+            res.status(404).json({error:`The post with the specified ID does not exist. ${id}`})
+            return
+        }
+        else {
+            res.status(200).json(post)
+        }
+    }
+    catch {
+        res.status(500).json({error:"The post information could not be retrieved."})
+    }
 })
 server.get('/api/posts/:id/comments', (req, res) => {
 
