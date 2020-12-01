@@ -103,8 +103,22 @@ server.get('/api/posts/:id/comments', async (req, res) => {
         res.status(500).json({error: "The comments information could not be retrieved."})
     }
 })
-server.delete('/api/posts/:id', (req, res) => {
+server.delete('/api/posts/:id', async (req, res) => {
+    const { id } = req.params
 
+    try {
+        const post = await db.findById(id)
+        if (post.length === 0) {
+            res.status(404).json({message:"The post with the specified ID does not exist"})
+        }
+        else {
+            await db.remove(id)
+            res.json(post)
+        }
+    }
+    catch {
+        res.status(500).json({error:"The post could not be removed"})
+    }
 })
 server.put('/api/posts/:id', (req, res) => {
 
